@@ -3,7 +3,7 @@
 [[ $0 != $BASH_SOURCE ]] && COMPOSER="$BASH_SOURCE" || COMPOSER="$0"
 PROJECT=$(dirname $(dirname $(readlink -m $COMPOSER)))
 
-if [ -z "$@" ]; then
+if [[ -z "$@" ]]; then
 	echo "Usage: $0 <shell command>"
 	exit 0
 fi
