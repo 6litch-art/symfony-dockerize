@@ -1,0 +1,6 @@
+#! /bin/bash
+
+[[ $0 != $BASH_SOURCE ]] && COMPOSER="$BASH_SOURCE" || COMPOSER="$0"
+PROJECT=$(dirname $(dirname $(readlink -m $COMPOSER)))
+
+$PROJECT/bin/dock bin/console $@

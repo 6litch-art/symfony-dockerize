@@ -1,0 +1,13 @@
+#! /bin/bash
+
+[[ $0 != $BASH_SOURCE ]] && COMPOSER="$BASH_SOURCE" || COMPOSER="$0"
+PROJECT=$(dirname $(dirname $(readlink -m $COMPOSER)))
+
+if [ -z "$@" ]; then
+	echo "Usage: $0 <shell command>"
+	exit 0
+fi
+
+cd $PROJECT/docker
+docker-compose run php-fpm $@
+cd - > /dev/null 2>&1
