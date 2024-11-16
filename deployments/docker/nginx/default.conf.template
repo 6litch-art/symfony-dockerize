@@ -1,0 +1,100 @@
+map $http_x_forwarded_for $real_ip {
+    ~^(\d+\.\d+\.\d+\.\d+) $1;
+    default $remote_addr;
+}
+
+# Redirect HTTP to HTTPS (Optional)
+server {
+    listen 8080;
+
+    return 301 https://$host$request_uri;
+}
+
+# HTTPS Configuration (port 443)
+server {
+  
+    listen 443 ssl default_server;
+
+    ssl_certificate /etc/nginx/ssl/localhost.crt;
+    ssl_certificate_key /etc/nginx/ssl/localhost.key;
+
+    root /srv/app/public;
+    client_max_body_size 10M;
+    server_tokens off;
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain text/csv application/xml application/javascript application/json;
+    gzip_min_length 1000;
+    gzip_vary on;
+
+    # Security headers
+    add_header X-Frame-Options SAMEORIGIN;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Referrer-Policy "no-referrer-when-downgrade";
+
+    location / {
+        try_files $uri /index.php$is_args$args;
+    }
+
+    location ~ ^/index\.php(/|$) {
+        fastcgi_pass $PROJECT_NAME-php:9000;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param SCRIPT_NAME $fastcgi_script_name;
+    }
+
+  set $phpmyadmin $PROJECT_NAME-phpmyadmin:80;
+  location /phpMyAdmin {
+    resolver 127.0.0.11; # Docker internal DNS
+    rewrite ^/phpMyAdmin(/.*)$ $1 break;
+    proxy_pass http://$phpmyadmin;
+    proxy_set_header X-Real-IP  $remote_addr;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header Host $host;
+  }
+
+  set $typesense_dashboard $PROJECT_NAME-typesense-dashboard:80;
+  location /typesense {
+    resolver 127.0.0.11; # Docker internal DNS
+    rewrite ^/typesense(/.*)$ $1 break;
+    proxy_pass http://$typesense_dashboard;
+    proxy_set_header X-Real-IP  $remote_addr;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header Host $host;
+  }
+
+  set $rabbitmq $PROJECT_NAME-rabbitmq:15672;
+  location /rabbitmq {
+    resolver 127.0.0.11; # Docker internal DNS
+    rewrite ^/rabbitmq(/.*)$ $1 break;
+    proxy_pass http://$rabbitmq;
+    proxy_set_header X-Real-IP  $remote_addr;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header Host $host;
+  }
+
+  set $maildev $PROJECT_NAME-maildev:1080;
+  location /maildev {
+    resolver 127.0.0.11; # Docker internal DNS
+    rewrite ^/maildev(/.*)$ $1 break;
+    proxy_pass http://$maildev;
+    proxy_set_header X-Real-IP  $remote_addr;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header Host $host;
+  }
+
+  location /stub_status {
+    stub_status;
+
+    access_log off;
+    allow 127.0.0.1;
+    deny all;
+  }
+
+  location = /status {
+    access_log off;
+    deny all;
+  }
+}

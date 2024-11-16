@@ -1,0 +1,66 @@
+
+volumes:
+  backup:
+    name: ${PROJECT_NAME}-backup
+
+services:
+  php:
+    volumes:
+      - .:/srv/app:rw
+
+  node:
+    volumes:
+      - .:/srv/app:rw
+
+  phpmyadmin:
+    container_name: ${PROJECT_NAME}-phpmyadmin
+    image: phpmyadmin/phpmyadmin:latest
+    environment:
+      PMA_HOST: ${PROJECT_NAME}-mariadb
+    ports:
+      - 80:80
+    depends_on:
+      - mariadb
+    volumes:
+      - ./deployments/docker/phpmyadmin/config.user.inc.php:/etc/phpmyadmin/config.user.inc.php
+      - ./deployments/docker/phpmyadmin/config.secret.inc.php:/etc/phpmyadmin/config.secret.inc.php
+    networks:
+      - intranet
+
+  maildev:
+    container_name: ${PROJECT_NAME}-maildev
+    restart: unless-stopped
+    image: maildev/maildev
+    command: bin/maildev --web 1080 --smtp 1025 --hide-extensions STARTTLS
+    ports:
+      - 1080:1080
+      - 1025:1025
+    networks:
+      - intranet
+
+  typesense-dashboard:
+    container_name: ${PROJECT_NAME}-typesense-dashboard
+    restart: unless-stopped
+    depends_on:
+      - typesense
+    build:
+      context: ./deployments/docker/typesense
+      dockerfile: Dockerfile
+      args:
+        - PUBLIC_PATH=/typesense
+    ports:
+      - 80:80
+    networks:
+      - intranet
+
+  sftp:
+    container_name: ${PROJECT_NAME}-sftp
+    image: atmoz/sftp:latest
+    ports:
+      - 2222:22
+    volumes:
+      - backup:/home/user/upload
+    environment:
+      - SFTP_USERS=user:password:1001
+    networks:
+      - intranet

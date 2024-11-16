@@ -1,0 +1,31 @@
+.transparent { transition-duration: 0.25s; }
+.transparent.active.first.intro #loader { transition-delay:0s; }
+.transparent:not(.loading) #loader { display:none; }
+.transparent #loader
+{
+	position:fixed;
+	top:0;
+	left:0;
+	height:100vh;
+	object-fit:cover;
+	z-index:14;
+
+	object-position: center bottom;
+	overflow:hidden;
+
+	background-color:white;
+	transition: width 0.5s ease 0.25s, opacity 0.25s ease !important;;
+}
+
+.transparent.disable     #loader { display:none; }
+.transparent.pre-active  #loader { width:0vw; }
+.transparent.active-in   #loader { width:120vw; }
+.transparent.active      #loader { width:120vw; }
+.transparent.active-out  #loader { width:0vw; }
+.transparent.post-active #loader { width:0vw; }
+
+.transparent #page { transition:opacity 0.25s ease !important; }
+
+/* maybe people will not get what happens.. */
+/* .transparent.loading:not(.same) #page { opacity:0; } */
+.transparent.loading #page { opacity:0; }

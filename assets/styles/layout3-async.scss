@@ -1,0 +1,35 @@
+@import 'layout2-async.scss';
+
+.flashbag {
+
+    position: relative;
+    z-index:1;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    min-height:5em;
+    top:7em;
+}
+
+.flashbag #flash-messages { width: 90%; }
+
+@media all and (max-width: 470px)                  
+{
+    #page>main article>.header
+    {
+        display:flex;
+        flex-direction:column;
+        margin-top:0;
+    }
+
+    .timeline-content {
+        display: flex;
+        justify-content: center;
+    }
+
+    .timeline_date_final
+    {
+        margin-top: -1.5em!important;
+    }
+}

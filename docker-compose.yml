@@ -1,62 +1,127 @@
-version: '3.5'
+
+networks:
+  extranet:
+    name: ${PROJECT_NAME}-extranet
+    driver: bridge
+  intranet:
+    name: ${PROJECT_NAME}-intranet
+    driver: bridge
+    internal: true
+
+volumes:
+  app:
+    name: ${PROJECT_NAME}-app
+  rabbitmq:
+    name: ${PROJECT_NAME}-rabbitmq
+  redis:
+    name: ${PROJECT_NAME}-redis
+  mariadb:
+    name: ${PROJECT_NAME}-mariadb
+  typesense:
+    name: ${PROJECT_NAME}-typesense
+  nfs:
+    name: ${PROJECT_NAME}-nfs
 
 services:
-  php:
-    container_name: ${PROJECT_NAME}_php
-    build:
-      context: .
-      dockerfile: ./.deployment/docker/containers/php/Dockerfile
-    depends_on:
-      - database
-    env_file:
-      - .env
-    networks:
-      service:
-        aliases:
-          - pod
-    environment:
-      - ENV=/home/www-data/.ashrc
+  kickoff:
+    container_name: ${PROJECT_NAME}-kickoff
+    image: alpine
     volumes:
-      - ./:/srv/app/:rw
-      - ./.deployment/docker/containers/php/www.conf:/etc/php8.1.3/php-fpm.conf
-      - ./.deployment/docker/containers/php/php.ini:/usr/local/etc/php/php.ini
-      - ./.deployment/docker/aliases/.ashrc:/home/www-data/.ashrc
-    command: --define opcache.validate_timestamps=On
+      - .:/srv/local:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - app:/srv/app
+    environment:
+      - .env
+    entrypoint: /srv/local/deployments/docker/kickoff/entrypoint.sh
+    restart: "no" 
 
   nginx:
-    container_name: ${PROJECT_NAME}_nginx
+    container_name: ${PROJECT_NAME}-nginx
+    restart: unless-stopped
     depends_on:
       - php
-    image: nginx:1.20-alpine
+    build:
+      context: .
+      dockerfile: ./deployments/docker/nginx/Dockerfile
     environment:
       - HTTPS_METHOD=noredirect
+      - PROJECT_NAME=${PROJECT_NAME}
     networks:
-      - service
+      - intranet
+      - extranet
     volumes:
       - ./public:/srv/app/public:ro
-      - ./.deployment/docker/containers/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./deployments/docker/nginx/default.conf.template:/etc/nginx/templates/default.conf.template
     ports:
-      - "8000:8080"
+      - "80:8080"
+      - "443:443"
 
-  database:
-    container_name: ${PROJECT_NAME}_database
-    image: mariadb:10.4.19
+  php:
+    container_name: ${PROJECT_NAME}-php
+    build:
+      context: .
+      dockerfile: ./deployments/docker/php/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - kickoff
+      - mariadb
     env_file:
       - .env
     networks:
-      - service
+      - extranet
     volumes:
-      - database_docker:/var/lib/mysql
+      - .:/srv/local:ro
+      - app:/srv/app:rw
+      - ./deployments/docker/php/php-fpm.conf:/etc/php8.1.3/php-fpm.conf
+      - ./deployments/docker/php/php.ini:/usr/local/etc/php/php.ini
+    command: --define opcache.validate_timestamps=On
+    entrypoint: /srv/local/deployments/docker/php/entrypoint.sh
+
+
+  node:
+    container_name: ${PROJECT_NAME}-node
+    depends_on:
+      - php
+    build:
+      context: .
+      dockerfile: ./deployments/docker/node/Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - .:/srv/local:ro
+      - app:/srv/app:rw
+      - ./var/log/${APP_ENV}/npm:/root/.npm/_logs
+    networks:
+      - extranet
+    entrypoint: /srv/local/deployments/docker/node/entrypoint.sh
+
+  mariadb:
+    container_name: ${PROJECT_NAME}-mariadb
+    restart: unless-stopped
+    image: mariadb:latest
     ports:
-      - "8001:3306"
+      - 3306:3306
+    env_file:
+      - .env
+    networks:
+      - intranet
+    volumes:
+      - mariadb:/var/lib/mysql
 
   rabbitmq:
-    restart: unless-stopped
-    container_name: ${PROJECT_NAME}_rabbitmq
+    container_name: ${PROJECT_NAME}-rabbitmq
     image: rabbitmq:3-management
+    restart: unless-stopped
     hostname: rabbitmq
+    ports:
+      - 15672:15672
+      - 35197:35197
+      - 4369:4369 
+      - 5672:5672 
+      - 5671:5671 
     networks:
-      - service
+      - intranet
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
@@ -65,26 +130,46 @@ services:
       RABBITMQ_PASS: ${RABBITMQ_PASS}
       RABBITMQ_VHOST: ${RABBITMQ_VHOST}
     volumes:
-      - rabbitmq_volume:/var/lib/rabbitmq/mnesia/rabbit@my-rabbit
-    ports:
-      - "8002:5672"
-      - "8003:15672"
+      - rabbitmq:/var/lib/rabbitmq/mnesia/rabbit@my-rabbit
 
-  maildev:
+  typesense:
+    container_name: ${PROJECT_NAME}-typesense
+    image: typesense/typesense:0.21.0 # to be upgraded to 28.0.rc20
     restart: unless-stopped
-    container_name: ${PROJECT_NAME}_maildev
-    image: maildev/maildev
-    command: bin/maildev --web 80 --smtp 25 --hide-extensions STARTTLS
-    networks:
-      - service
     ports:
-      - "8004:80"
-      - "8005:25"
+      - 8108:8108
+    environment:
+      TYPESENSE_DATA_DIR: /typesense
+      TYPESENSE_API_KEY: typesense-api-key
+      TYPESENSE_LOG_LEVEL: warn
+    volumes:
+      - typesense:/typesense
+    networks:
+      - intranet
 
-volumes:
-  rabbitmq_volume: {}
-  database_docker: {}
+  nfs:
+    container_name: ${PROJECT_NAME}-nfs
+    build:
+      context: ./deployments/docker/nfs
+      dockerfile: Dockerfile
+    privileged: true
+    ports:
+      - 2049:2049
+    restart: unless-stopped
+    volumes:
+      - nfs:/nfs
+    environment:
+      - SHARED_DIRECTORY=/nfs
+    networks:
+      - intranet
 
-networks:
-  service:
-    name: service
+  redis:
+    image: redis:alpine
+    container_name: ${PROJECT_NAME}-redis
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    networks:
+      - intranet
+    volumes:
+      - redis:/data

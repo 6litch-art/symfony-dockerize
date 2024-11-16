@@ -1,0 +1,22 @@
+{
+  "entrypoints": {
+    "app": {
+      "css": [
+        "/assets/app.css"
+      ],
+      "js": [
+        "/assets/app.js"
+      ]
+    },
+    "app-async": {
+      "js": [
+        "/assets/app-async.js"
+      ]
+    },
+    "app-defer": {
+      "js": [
+        "/assets/app-defer.js"
+      ]
+    }
+  }
+}

@@ -1,0 +1,47 @@
+
+pre {
+    margin: 1em 0.25em !important;
+    padding: 0.75em 1em !important;
+    line-height: 1.6em;
+    color: #FFF;
+    white-space: pre-wrap;
+    background-color: #002b37;
+    border: 4px solid #555;
+    border-top: 30px solid #555;
+    border-radius: 0.4em !important;
+    position: relative;
+    overflow: unset;
+}
+
+.modal-backdrop { display:none; }
+.input-group { width:auto !important; }
+.label {
+    display: inline;
+    font-size: 16pt;
+}
+ 
+.btn-success, .btn-warning, .btn-danger { color: white; }
+#myMap { background-color: #99D7FE; }
+form .hidden { display:none !important; }
+
+#page .captcha 
+{
+    margin-top:0.25em !important;
+    margin-bottom:0.25em !important;
+    width: 100%;
+    overflow:scroll;
+
+    -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 92.5%, rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 92.5%, rgba(0, 0, 0, 0) 100%);
+}
+
+.ajaxer-loader.ajaxer-call:not(.ajaxer-error):after { left:50%; }
+.ajaxer-loader.ajaxer-call {
+    position: relative;
+}
+.ajaxer-loader
+{
+    box-shadow: 0 4px 0 hsla(205, 38%, 89%, 0.8);
+    background-color: #FFF;
+    border-radius: 1em;
+}

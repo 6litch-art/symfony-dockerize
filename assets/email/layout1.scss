@@ -1,0 +1,129 @@
+
+.btn-primary {
+
+    border-radius:1em;
+}
+
+
+table.body {
+    background: #eaeaea;
+}
+
+table.container {
+    background: #fefefe;
+}
+table.button a {
+    font-family: "Roboto Slab", "Helvetica", "Arial", "sans-serif";
+}
+
+body {
+    color:#3d4449;
+    font-family: "Roboto Slab", "Helvetica", "Arial", "sans-serif";
+    text-align: justify;
+
+    background: #eaeaea;
+}
+
+body {
+    background: #eaeaea;
+}
+
+.wrapper.secondary {
+    background: #eaeaea;
+    margin: 0;
+    width: 100%;
+}
+
+
+p {
+    font-family: "Roboto Slab", "Helvetica", "Arial", "sans-serif";
+    text-align:justify;
+    line-height:1.5;
+} 
+
+.lead {
+
+    font-weight:700;
+    font-size: 20pt;
+    line-height: 1.2;
+    margin-top:1em;
+}
+
+.footer a { color:#000; text-decoration:underline; }
+hr {
+    border:0;
+    border-bottom: 1px solid #3d4246aa;
+    line-height: 2;
+    margin-bottom:1em;
+    opacity:0.7;
+}
+
+.main p { text-align:justify; }
+.excerpt p
+{
+    background-color:#FFF;
+    padding:1em;
+    border-radius: 1em;
+    text-align:justify;
+}
+
+.secondary .header 
+{
+    height:160px;
+    margin:auto;
+    position:relative;
+}
+.secondary .header.logo, 
+.secondary .header img
+{
+    width:160px;
+    z-index:2;
+
+    margin: auto;
+    margin-top:1em;
+}
+
+.excerpt
+{
+    vertical-align: bottom;
+}
+
+div.small-12, th.small-12,
+div.small-11, th.small-11,
+div.small-10, th.small-10,
+div.small-9, th.small-9,
+div.small-8, th.small-8,
+div.small-7, th.small-7,
+div.small-6, th.small-6,
+div.small-5, th.small-5,
+div.small-4, th.small-4,
+div.small-3, th.small-3,
+div.small-2, th.small-2,
+div.small-1, th.small-1 {
+    display: table-cell ;
+}
+
+
+@media only screen and (max-width: 596px) {
+
+    div.small-12, th.small-12,
+    div.small-11, th.small-11,
+    div.small-10, th.small-10,
+    div.small-9, th.small-9,
+    div.small-8, th.small-8,
+    div.small-7, th.small-7,
+    div.small-6, th.small-6,
+    div.small-5, th.small-5,
+    div.small-4, th.small-4,
+    div.small-3, th.small-3,
+    div.small-2, th.small-2,
+    div.small-1, th.small-1 {
+        display: block;
+    }
+}
+
+a {
+    color:#959595;
+    font-family: "Roboto Slab", "Helvetica", "Arial", "sans-serif";
+    text-decoration:underline;
+}

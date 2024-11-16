@@ -1,0 +1,13 @@
+
+#sharetip button {
+
+    font-size: 18pt;
+    color: #FFF;
+    background-color: unset;
+    border: 0;
+}
+
+#sharetip button:hover {
+
+    text-shadow: 0px 0px 15px #FFFA;
+}
