@@ -23,24 +23,13 @@ volumes:
     name: ${PROJECT_NAME}-nfs
 
 services:
-  kickoff:
-    container_name: ${PROJECT_NAME}-kickoff
-    image: alpine
-    volumes:
-      - .:/srv/local:ro
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
-      - app:/srv/app
-    environment:
-      - .env
-    entrypoint: /srv/local/deployments/docker/kickoff/entrypoint.sh
-    restart: "no" 
 
-  nginx:
-    container_name: ${PROJECT_NAME}-nginx
+  webserver:
+    container_name: ${PROJECT_NAME}-webserver
     restart: unless-stopped
     depends_on:
       - php
+      - node
     build:
       context: .
       dockerfile: ./deployments/docker/nginx/Dockerfile
@@ -64,7 +53,6 @@ services:
       dockerfile: ./deployments/docker/php/Dockerfile
     restart: unless-stopped
     depends_on:
-      - kickoff
       - mariadb
     env_file:
       - .env
@@ -77,7 +65,6 @@ services:
       - ./deployments/docker/php/php.ini:/usr/local/etc/php/php.ini
     command: --define opcache.validate_timestamps=On
     entrypoint: /srv/local/deployments/docker/php/entrypoint.sh
-
 
   node:
     container_name: ${PROJECT_NAME}-node
@@ -138,9 +125,10 @@ services:
     restart: unless-stopped
     ports:
       - 8108:8108
+    env_file:
+      - .env
     environment:
       TYPESENSE_DATA_DIR: /typesense
-      TYPESENSE_API_KEY: typesense-api-key
       TYPESENSE_LOG_LEVEL: warn
     volumes:
       - typesense:/typesense

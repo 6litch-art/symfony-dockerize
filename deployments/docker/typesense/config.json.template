@@ -1,0 +1,10 @@
+{
+    "apiKey": "xyz",
+    "node": {
+      "host":"localhost",
+      "port":"80",
+      "protocol":"http",
+      "path":"/typesense",
+      "tls":true
+    }
+  }

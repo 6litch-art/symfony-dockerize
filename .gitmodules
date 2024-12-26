@@ -1,3 +1,3 @@
 [submodule "deployments/docker/typesense/typesense-dashboard"]
-	path = deployments/docker/typesense
+	path = deployments/docker/typesense/dashboard
 	url = https://github.com/bfritscher/typesense-dashboard.git

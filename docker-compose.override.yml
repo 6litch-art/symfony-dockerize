@@ -4,6 +4,7 @@ volumes:
     name: ${PROJECT_NAME}-backup
 
 services:
+
   php:
     volumes:
       - .:/srv/app:rw
@@ -12,8 +13,8 @@ services:
     volumes:
       - .:/srv/app:rw
 
-  phpmyadmin:
-    container_name: ${PROJECT_NAME}-phpmyadmin
+  mariadb-dashboard:
+    container_name: ${PROJECT_NAME}-mariadb-dashboard
     image: phpmyadmin/phpmyadmin:latest
     environment:
       PMA_HOST: ${PROJECT_NAME}-mariadb
@@ -34,7 +35,6 @@ services:
     command: bin/maildev --web 1080 --smtp 1025 --hide-extensions STARTTLS
     ports:
       - 1080:1080
-      - 1025:1025
     networks:
       - intranet
 
@@ -43,18 +43,23 @@ services:
     restart: unless-stopped
     depends_on:
       - typesense
+    env_file:
+      - .env
+    volumes:
+      - .:/srv/local:ro
     build:
-      context: ./deployments/docker/typesense
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./deployments/docker/typesense/Dockerfile
       args:
         - PUBLIC_PATH=/typesense
+    entrypoint: /srv/local/deployments/docker/typesense/entrypoint.sh
     ports:
       - 80:80
     networks:
       - intranet
 
-  sftp:
-    container_name: ${PROJECT_NAME}-sftp
+  backup:
+    container_name: ${PROJECT_NAME}-backup
     image: atmoz/sftp:latest
     ports:
       - 2222:22
