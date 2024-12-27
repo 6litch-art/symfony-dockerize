@@ -5,8 +5,8 @@ ifneq (,$(wildcard .env))
 endif
 
 DOCKER_COMPOSE = docker-compose
-DOCKER_DATABASE = docker exec -ti $(shell docker container ls -f "name=$(PROJECT_NAME)-database$$" -q)
-DOCKER_ASSETS  = docker exec -ti $(shell docker container ls -f "name=$(PROJECT_NAME)-assets$$" -q)
+DOCKER_DATABASE = docker exec -ti $(shell docker container ls -f "name=$(PROJECT_NAME)-mariadb$$" -q)
+DOCKER_ASSETS  = docker exec -ti $(shell docker container ls -f "name=$(PROJECT_NAME)-node$$" -q)
 DOCKER_PHP     = docker exec -ti $(shell docker container ls -f "name=$(PROJECT_NAME)-php$$" -q)
 
 COLOR_RESET	  = \033[0m
@@ -36,10 +36,16 @@ image: env
 	@$(DOCKER_COMPOSE) build --pull --no-cache
 
 ## Set up environment variables in .env file
+ifeq ($(shell uname), Darwin)
+    SED_FLAGS = -i ''
+else
+    SED_FLAGS = -i
+endif
+
 env:
 	@sed $(SED_FLAGS) "/APP_ENV=/d" .env
-	@echo "APP_ENV=$(APP_ENV)" >> .env
 	@sed $(SED_FLAGS) "/APP_DEBUG=/d" .env
+	@echo "APP_ENV=$(APP_ENV)" >> .env
 	@echo "APP_DEBUG=$(APP_DEBUG)" >> .env
 
 ## Start Docker containers
@@ -59,40 +65,60 @@ down:
 ## Restart Docker containers
 restart: down up
 
+SERVICE = $(word 2, $(MAKECMDGOALS))
+ARGS = $(wordlist 3, $(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
+CONTAINER = docker exec -ti $(shell docker container ls -f "name=$(PROJECT_NAME)-$(SERVICE)$$" -q)
+
 ## Open a shell in a specific Docker service
 shell:
-ifeq ($(SERVICE),)
-	$(error SERVICE is not set. Please specify a service like: make shell SERVICE=\*)
+ifeq ($(strip $(SERVICE)),)
+	$(error `service` is not set. Please specify a service like: [ make $@ <service> <args..> ])
 endif
-	@$(DOCKER_COMPOSE) exec $(SERVICE) sh
+ifeq ($(strip $(CONTAINER)),)
+	$(error container `$(SERVICE)` not found. Please specify an existing service like: [ make $@ <service> <args..> ])
+endif
+	@$(CONTAINER) sh
+
+## Open a specific console service (mariadb,..)
+console:
+ifeq ($(SERVICE), mariadb)
+	@$(CONTAINER) mariadb -h $(MYSQL_HOST) -u root -p$(MYSQL_ROOT_PASSWORD) $(MYSQL_DATABASE)
+else
+	$(error Console `service` is not predefined. Please specify an existing service console)
+endif
 
 ## Run Composer to manage PHP dependencies
 composer: env
-ifeq ($(strip $(APP_DEBUG)),true)
+ifneq ($(filter $(APP_DEBUG),1 true),)
 	@$(DOCKER_PHP) composer install
 	@$(DOCKER_PHP) composer update
 	@echo "[+] Application composer built development environment."
 else
 	@$(DOCKER_PHP) composer install --prefer-dist --no-dev --no-progress --no-scripts --no-interaction
-	@$(DOCKER_PHP) composer update
+	@$(DOCKER_PHP) composer update --prefer-dist --no-dev --no-progress --no-scripts --no-interaction
 	@echo "[+] Application composer built production environment."
 endif
 
 ## Show the MariaDB version
 database-version:
-	$(DOCKER_DATABASE) mariadb -h $(MYSQL_HOST) -u $(MYSQL_USER) -p$(MYSQL_PASSWORD) $(MYSQL_DATABASE) -e "SELECT VERSION();"
+	@$(DOCKER_DATABASE) mariadb -h $(MYSQL_HOST) -u $(MYSQL_USER) -p$(MYSQL_PASSWORD) $(MYSQL_DATABASE) -e "SELECT VERSION();"
 
-## Open the MariaDB console
-database:
-	$(DOCKER_DATABASE) mariadb -h $(MYSQL_HOST) -u root -p$(MYSQL_ROOT_PASSWORD) $(MYSQL_DATABASE)
+## Display doctrine migration status
+doctrine:
+	@$(DOCKER_PHP) php bin/console doctrine:migrations:list
 
-## Update the database schema
+## Upgrate the database schema without condition (development only)
 doctrine-upgrade:
 	@$(DOCKER_PHP) php bin/console doctrine:schema:update --dump-sql --force -vvv
-
-## Run database migrations
+## Prepare database migrations (recommended for production)
 doctrine-migration:
-	@$(DOCKER_PHP) php bin/console doctrine:migrations:migrate --no-interaction -vvv
+	@$(DOCKER_PHP) php bin/console make:migration -vvv
+## Run database migrations
+doctrine-migrate:
+	@$(DOCKER_PHP) php bin/console doctrine:migrations:migrate -vvv
+## Load doctrine fixtures into the database
+doctrine-fixtures:
+	@$(DOCKER_PHP) php bin/console doctrine:fixtures:load -vvv
 
 ## Install frontend assets with Yarn
 assets:
@@ -101,6 +127,16 @@ assets:
 ## List all application secrets
 secrets:
 	@$(DOCKER_PHP) php bin/console secrets:list --reveal
+
+## Test a path route
+route:
+	@$(DOCKER_PHP) php bin/console router:match $(SERVICE)
+## Check all available routes
+router:
+	@$(DOCKER_PHP) php bin/console debug:router
+## Check all available listener/subscribers
+dispatcher:
+	@$(DOCKER_PHP) php bin/console debug:event-dispatcher
 
 ## Clear the application cache
 clear:

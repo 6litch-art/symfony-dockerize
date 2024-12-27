@@ -58,6 +58,7 @@ services:
       - .env
     networks:
       - extranet
+      - intranet
     volumes:
       - .:/srv/local:ro
       - app:/srv/app:rw
